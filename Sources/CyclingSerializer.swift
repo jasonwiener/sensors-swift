@@ -43,7 +43,7 @@ open class CyclingSerializer {
     }
     
     open static func readSensorLocation(_ data: Data) -> SensorLocation? {
-        let bytes = (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count)
+        let bytes = data.map { $0 }
         return SensorLocation(rawValue: bytes[0])
     }
     
@@ -82,7 +82,7 @@ open class CyclingSerializer {
         return 0
     }
     
-    private static func deltaWithRollover<T: Integer>(_ new: T, old: T, max: T) -> T {
+    private static func deltaWithRollover<T: BinaryInteger>(_ new: T, old: T, max: T) -> T {
         return old > new ? max - old + new : new - old
     }
     

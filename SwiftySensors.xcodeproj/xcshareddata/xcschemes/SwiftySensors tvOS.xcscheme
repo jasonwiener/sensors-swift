@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0900"
+   LastUpgradeVersion = "0920"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8D4FA7751C9C8693000285BA"
+               BlueprintIdentifier = "8D0B37861FE18EA20073A7F7"
                BuildableName = "SwiftySensors.framework"
-               BlueprintName = "SwiftySensors iOS"
+               BlueprintName = "SwiftySensors tvOS"
                ReferencedContainer = "container:SwiftySensors.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -47,9 +47,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8D4FA7751C9C8693000285BA"
+            BlueprintIdentifier = "8D0B37861FE18EA20073A7F7"
             BuildableName = "SwiftySensors.framework"
-            BlueprintName = "SwiftySensors iOS"
+            BlueprintName = "SwiftySensors tvOS"
             ReferencedContainer = "container:SwiftySensors.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -65,9 +65,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8D4FA7751C9C8693000285BA"
+            BlueprintIdentifier = "8D0B37861FE18EA20073A7F7"
             BuildableName = "SwiftySensors.framework"
-            BlueprintName = "SwiftySensors iOS"
+            BlueprintName = "SwiftySensors tvOS"
             ReferencedContainer = "container:SwiftySensors.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

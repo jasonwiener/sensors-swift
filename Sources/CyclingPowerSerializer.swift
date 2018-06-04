@@ -82,8 +82,12 @@ open class CyclingPowerSerializer {
     
     
     open static func readFeatures(_ data: Data) -> Features {
-        let bytes = (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count)
-        let rawFeatures: UInt32 = ((UInt32)(bytes[0])) | ((UInt32)(bytes[1])) << 8 | ((UInt32)(bytes[2])) << 16 | ((UInt32)(bytes[3])) << 24
+        let bytes = data.map { $0 }
+        var rawFeatures: UInt32 = 0
+        if bytes.count > 0 { rawFeatures |= UInt32(bytes[0]) }
+        if bytes.count > 1 { rawFeatures |= UInt32(bytes[1]) << 8 }
+        if bytes.count > 2 { rawFeatures |= UInt32(bytes[2]) << 16 }
+        if bytes.count > 3 { rawFeatures |= UInt32(bytes[3]) << 24 }
         return Features(rawValue: rawFeatures)
     }
     
@@ -91,60 +95,68 @@ open class CyclingPowerSerializer {
     open static func readMeasurement(_ data: Data) -> MeasurementData {
         var measurement = MeasurementData()
         
-        let bytes = (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count)
+        let bytes = data.map { $0 }
         var index: Int = 0
         
-        let rawFlags: UInt16 = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        let flags = MeasurementFlags(rawValue: rawFlags)
-        measurement.instantaneousPower = ((Int16)(bytes[index++=])) | ((Int16)(bytes[index++=])) << 8
-        
-        if flags.contains(.PedalPowerBalancePresent) {
-            measurement.pedalPowerBalance = bytes[index++=]
-            measurement.pedalPowerBalanceReference = rawFlags & 0x2 == 0x2
+        if bytes.count >= 2 {
+            let rawFlags: UInt16 = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+            let flags = MeasurementFlags(rawValue: rawFlags)
+            
+            if bytes.count >= 4 {
+                measurement.instantaneousPower = Int16(bytes[index++=]) | Int16(bytes[index++=]) << 8
+         
+                if flags.contains(.PedalPowerBalancePresent) && bytes.count >= index {
+                    measurement.pedalPowerBalance = bytes[index++=]
+                    measurement.pedalPowerBalanceReference = rawFlags & 0x2 == 0x2
+                }
+                
+                if flags.contains(.AccumulatedTorquePresent) && bytes.count >= index + 1 {
+                    measurement.accumulatedTorque = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.WheelRevolutionDataPresent) && bytes.count >= index + 6 {
+                    var cumulativeWheelRevolutions = UInt32(bytes[index++=])
+                    cumulativeWheelRevolutions |= UInt32(bytes[index++=]) << 8
+                    cumulativeWheelRevolutions |= UInt32(bytes[index++=]) << 16
+                    cumulativeWheelRevolutions |= UInt32(bytes[index++=]) << 24
+                    measurement.cumulativeWheelRevolutions = cumulativeWheelRevolutions
+                    measurement.lastWheelEventTime = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.CrankRevolutionDataPresent) && bytes.count >= index + 4 {
+                    measurement.cumulativeCrankRevolutions = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                    measurement.lastCrankEventTime = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.ExtremeForceMagnitudesPresent) && bytes.count >= index + 4 {
+                    measurement.maximumForceMagnitude = Int16(bytes[index++=]) | Int16(bytes[index++=]) << 8
+                    measurement.minimumForceMagnitude = Int16(bytes[index++=]) | Int16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.ExtremeTorqueMagnitudesPresent) && bytes.count >= index + 4 {
+                    measurement.maximumTorqueMagnitude = Int16(bytes[index++=]) | Int16(bytes[index++=]) << 8
+                    measurement.minimumTorqueMagnitude = Int16(bytes[index++=]) | Int16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.ExtremeAnglesPresent) && bytes.count >= index + 3 {
+                    // TODO: this bit shifting is not correct.
+                    measurement.minimumAngle = UInt16(bytes[index++=]) | UInt16(bytes[index] & 0xF0) << 4
+                    measurement.maximumAngle = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 4
+                }
+                
+                if flags.contains(.TopDeadSpotAnglePresent) && bytes.count >= index + 2 {
+                    measurement.topDeadSpotAngle = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.BottomDeadSpotAnglePresent) && bytes.count >= index + 2 {
+                    measurement.bottomDeadSpotAngle = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+                
+                if flags.contains(.AccumulatedEnergyPresent) && bytes.count >= index + 2 {
+                    measurement.accumulatedEnergy = UInt16(bytes[index++=]) | UInt16(bytes[index++=]) << 8
+                }
+            }
         }
-        
-        if flags.contains(.AccumulatedTorquePresent) {
-            measurement.accumulatedTorque = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.WheelRevolutionDataPresent) {
-            measurement.cumulativeWheelRevolutions = ((UInt32)(bytes[index++=])) | ((UInt32)(bytes[index++=])) << 8 | ((UInt32)(bytes[index++=])) << 16 | ((UInt32)(bytes[index++=])) << 24
-            measurement.lastWheelEventTime = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.CrankRevolutionDataPresent) {
-            measurement.cumulativeCrankRevolutions = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-            measurement.lastCrankEventTime = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.ExtremeForceMagnitudesPresent) {
-            measurement.maximumForceMagnitude = ((Int16)(bytes[index++=])) | ((Int16)(bytes[index++=])) << 8
-            measurement.minimumForceMagnitude = ((Int16)(bytes[index++=])) | ((Int16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.ExtremeTorqueMagnitudesPresent) {
-            measurement.maximumTorqueMagnitude = ((Int16)(bytes[index++=])) | ((Int16)(bytes[index++=])) << 8
-            measurement.minimumTorqueMagnitude = ((Int16)(bytes[index++=])) | ((Int16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.ExtremeAnglesPresent) {
-            // TODO: this bit shifting is not correct.
-            measurement.minimumAngle = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index] & 0xF0)) << 4
-            measurement.maximumAngle = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 4
-        }
-        
-        if flags.contains(.TopDeadSpotAnglePresent) {
-            measurement.topDeadSpotAngle = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.BottomDeadSpotAnglePresent) {
-            measurement.bottomDeadSpotAngle = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
-        if flags.contains(.AccumulatedEnergyPresent) {
-            measurement.accumulatedEnergy = ((UInt16)(bytes[index++=])) | ((UInt16)(bytes[index++=])) << 8
-        }
-        
         measurement.timestamp = Date.timeIntervalSinceReferenceDate
         return measurement
     }
